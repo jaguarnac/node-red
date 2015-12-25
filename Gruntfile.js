@@ -18,6 +18,12 @@ var path = require("path");
 
 module.exports = function(grunt) {
 
+    var nodemonArgs = ["-v"];
+    var flowFile = grunt.option('flowFile');
+    if (flowFile) {
+        nodemonArgs.push(flowFile);
+    }
+
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         paths: {
@@ -93,6 +99,8 @@ module.exports = function(grunt) {
                   // Ensure editor source files are concatenated in
                   // the right order
                   "editor/js/main.js",
+                  "editor/js/events.js",
+                  "editor/js/i18n.js",
                   "editor/js/settings.js",
                   "editor/js/user.js",
                   "editor/js/comms.js",
@@ -104,6 +112,7 @@ module.exports = function(grunt) {
                   "editor/js/ui/menu.js",
                   "editor/js/ui/keyboard.js",
                   "editor/js/ui/tabs.js",
+                  "editor/js/ui/popover.js",
                   "editor/js/ui/workspaces.js",
                   "editor/js/ui/view.js",
                   "editor/js/ui/sidebar.js",
@@ -128,7 +137,8 @@ module.exports = function(grunt) {
                         "editor/vendor/jquery/js/jquery.ui.touch-punch.min.js",
                         "editor/vendor/marked/marked.min.js",
                         "editor/vendor/orion/built-editor.min.js",
-                        "editor/vendor/d3/d3.v3.min.js"
+                        "editor/vendor/d3/d3.v3.min.js",
+                        "editor/vendor/i18next/i18next.min.js"
                     ],
                     "public/vendor/vendor.css": [
                         "editor/vendor/orion/built-editor.css"
@@ -153,7 +163,20 @@ module.exports = function(grunt) {
                 files: [{
                     dest: 'public/red/style.min.css',
                     src: 'editor/sass/style.scss'
+                },
+                {
+                    dest: 'public/vendor/bootstrap/css/bootstrap.min.css',
+                    src: 'editor/vendor/bootstrap/css/bootstrap.css'
                 }]
+            }
+        },
+        jsonlint: {
+            messages: {
+                src: [
+                    'nodes/core/locales/en-US/messages.json',
+                    'locales/en-US/editor.json',
+                    'locales/en-US/runtime.json'
+                ]
             }
         },
         attachCopyright: {
@@ -196,6 +219,14 @@ module.exports = function(grunt) {
                     'editor/sass/**/*.scss'
                 ],
                 tasks: ['sass','attachCopyright:css']
+            },
+            json: {
+                files: [
+                    'nodes/core/locales/en-US/messages.json',
+                    'locales/en-US/editor.json',
+                    'locales/en-US/runtime.json'
+                ],
+                tasks: ['jsonlint:messages']
             }
         },
 
@@ -204,10 +235,10 @@ module.exports = function(grunt) {
             dev: {
                 script: 'red.js',
                 options: {
-                    args:['-v'],
-                    ext: 'js,html',
+                    args: nodemonArgs,
+                    ext: 'js,html,json',
                     watch: [
-                        'red','nodes'
+                        'red','nodes','locales'
                     ]
                 }
             }
@@ -234,7 +265,7 @@ module.exports = function(grunt) {
                     cwd: 'editor/vendor',
                     src: [
                         'ace/**',
-                        'bootstrap/css/**',
+                        //'bootstrap/css/**',
                         'bootstrap/img/**',
                         'jquery/css/**',
                         'font-awesome/**'
@@ -271,7 +302,8 @@ module.exports = function(grunt) {
                         'red/**',
                         'public/**',
                         'editor/templates/**',
-                        'bin/**'
+                        'bin/**',
+                        'locales/**'
                     ],
                     dest: path.resolve('<%= paths.dist %>/node-red-<%= pkg.version %>')
                 }]
@@ -282,7 +314,7 @@ module.exports = function(grunt) {
                 mode: '755'
             },
             release: {
-                // Target-specific file/dir lists and/or options go here. 
+                // Target-specific file/dir lists and/or options go here.
                 src: [
                     path.resolve('<%= paths.dist %>/node-red-<%= pkg.version %>/nodes/core/hardware/nrgpio*')
                 ]
@@ -312,7 +344,8 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-compress');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-chmod');
-    
+    grunt.loadNpmTasks('grunt-jsonlint');
+
     grunt.registerMultiTask('attachCopyright', function() {
         var files = this.data.src;
         var copyright = "/**\n"+
@@ -377,7 +410,7 @@ module.exports = function(grunt) {
 
     grunt.registerTask('build',
         'Builds editor content',
-        ['clean:build','concat:build','concat:vendor','uglify:build','sass:build','copy:build','attachCopyright']);
+        ['clean:build','concat:build','concat:vendor','uglify:build','sass:build','jsonlint:messages','copy:build','attachCopyright']);
 
     grunt.registerTask('dev',
         'Developer mode: run node-red, watch for source changes and build/restart',

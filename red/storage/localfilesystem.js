@@ -132,7 +132,9 @@ var localfilesystem = {
                 settings.userDir = process.env.NODE_RED_HOME;
             } else {
                 settings.userDir = fspath.join(process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE || process.env.NODE_RED_HOME,".node-red");
-                promises.push(promiseDir(settings.userDir));
+                if (!settings.readOnly) {
+                    promises.push(promiseDir(settings.userDir));
+                }
             }
         }
 
@@ -178,22 +180,24 @@ var localfilesystem = {
 
         globalSettingsFile = fspath.join(settings.userDir,".config.json");
 
-        promises.push(promiseDir(libFlowsDir));
+        if (!settings.readOnly) {
+            promises.push(promiseDir(libFlowsDir));
+        }
 
         return when.all(promises);
     },
 
     getFlows: function() {
         return when.promise(function(resolve) {
-            log.info("User Directory : "+settings.userDir);
-            log.info("Flows file     : "+flowsFullPath);
+            log.info(log._("storage.localfilesystem.user-dir",{path:settings.userDir}));
+            log.info(log._("storage.localfilesystem.flows-file",{path:flowsFullPath}));
             fs.exists(flowsFullPath, function(exists) {
                 if (exists) {
                     resolve(nodeFn.call(fs.readFile,flowsFullPath,'utf8').then(function(data) {
                         return JSON.parse(data);
                     }));
                 } else {
-                    log.info("Creating new flows file");
+                    log.info(log._("storage.localfilesystem.create"));
                     resolve([]);
                 }
             });
@@ -201,6 +205,10 @@ var localfilesystem = {
     },
 
     saveFlows: function(flows) {
+        if (settings.readOnly) {
+            return when.resolve();
+        }
+
         if (fs.existsSync(flowsFullPath)) {
             fs.renameSync(flowsFullPath,flowsFileBackup);
         }
@@ -238,6 +246,10 @@ var localfilesystem = {
     },
 
     saveCredentials: function(credentials) {
+        if (settings.readOnly) {
+            return when.resolve();
+        }
+
         if (fs.existsSync(credentialsFile)) {
             fs.renameSync(credentialsFile,credentialsFileBackup);
         }
@@ -257,7 +269,7 @@ var localfilesystem = {
                     try {
                         return JSON.parse(data);
                     } catch(err) {
-                        log.info("Corrupted config detected - resetting");
+                        log.trace("Corrupted config detected - resetting");
                         return {};
                     }
                 } else {
@@ -268,6 +280,9 @@ var localfilesystem = {
         return when.resolve({});
     },
     saveSettings: function(settings) {
+        if (settings.readOnly) {
+            return when.resolve();
+        }
         return writeFile(globalSettingsFile,JSON.stringify(settings,null,1));
     },
     getSessions: function() {
@@ -277,7 +292,7 @@ var localfilesystem = {
                     try {
                         return JSON.parse(data);
                     } catch(err) {
-                        log.info("Corrupted sessions file - resetting");
+                        log.trace("Corrupted sessions file - resetting");
                         return {};
                     }
                 } else {
@@ -288,6 +303,9 @@ var localfilesystem = {
         return when.resolve({});
     },
     saveSessions: function(sessions) {
+        if (settings.readOnly) {
+            return when.resolve();
+        }
         return writeFile(sessionsFile,JSON.stringify(sessions));
     },
 
@@ -335,6 +353,9 @@ var localfilesystem = {
     },
 
     saveLibraryEntry: function(type,path,meta,body) {
+        if (settings.readOnly) {
+            return when.resolve();
+        }
         var fn = fspath.join(libDir, type, path);
         var headers = "";
         for (var i in meta) {

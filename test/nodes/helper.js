@@ -86,17 +86,31 @@ module.exports = {
             available: function() { return false; }
         };
 
+
+        var red = {};
+        for (var i in RED) {
+            if (RED.hasOwnProperty(i) && !/^(init|start|stop)$/.test(i)) {
+                var propDescriptor = Object.getOwnPropertyDescriptor(RED,i);
+                Object.defineProperty(red,i,propDescriptor);
+            }
+        }
+
+        red["_"] = function(messageId) {
+            return messageId;
+        };
+
         redNodes.init(settings, storage);
         credentials.init(storage,express());
         RED.nodes.registerType("helper", helperNode);
         if (Array.isArray(testNode)) {
             for (var i = 0; i < testNode.length; i++) {
-                testNode[i](RED);
+                testNode[i](red);
             }
         } else {
-            testNode(RED);
+            testNode(red);
         }
         flows.load().then(function() {
+            flows.startFlows();
             should.deepEqual(testFlows, flows.getFlows());
             cb();
         });
@@ -125,6 +139,7 @@ module.exports = {
     startServer: function(done) {
         server = http.createServer(function(req,res){app(req,res);});
         RED.init(server, {
+            SKIP_BUILD_CHECK: true,
             logging:{console:{level:'off'}}
         });
         server.listen(listenPort, address);

@@ -14,8 +14,10 @@
  * limitations under the License.
  **/
 RED.library = (function() {
-    
-    
+
+
+    var exportToLibraryDialog;
+
     function loadFlowLibrary() {
         $.getJSON("library/flows",function(data) {
             //console.log(data);
@@ -66,12 +68,12 @@ RED.library = (function() {
             $("#menu-item-import-library-submenu").replaceWith(menu);
         });
     }
-    
+
     function createUI(options) {
         var libraryData = {};
         var selectedLibraryItem = null;
         var libraryEditor = null;
-        
+
         // Orion editor has set/getText
         // ACE editor has set/getValue
         // normalise to set/getValue
@@ -84,14 +86,14 @@ RED.library = (function() {
         if (options.editor.getText) {
             options.editor.getValue = options.editor.getText;
         }
-        
+
         function buildFileListItem(item) {
             var li = document.createElement("li");
             li.onmouseover = function(e) { $(this).addClass("list-hover"); };
             li.onmouseout = function(e) { $(this).removeClass("list-hover"); };
             return li;
         }
-        
+
         function buildFileList(root,data) {
             var ul = document.createElement("ul");
             var li;
@@ -104,7 +106,7 @@ RED.library = (function() {
                         var dirName = v;
                         return function(e) {
                             var bcli = $('<li class="active"><span class="divider">/</span> <a href="#">'+dirName+'</a></li>');
-                            $("a",bcli).click(function(e) { 
+                            $("a",bcli).click(function(e) {
                                 $(this).parent().nextAll().remove();
                                 $.getJSON("library/"+options.url+root+dirName,function(data) {
                                     $("#node-select-library").children().first().replaceWith(buildFileList(root+dirName+"/",data));
@@ -141,24 +143,24 @@ RED.library = (function() {
             }
             return ul;
         }
-    
-        $('#node-input-name').addClass('input-append-left').css("width","65%").after(
-            '<div class="btn-group" style="margin-left: 0px;">'+
-            '<button id="node-input-'+options.type+'-lookup" class="btn input-append-right" data-toggle="dropdown"><i class="fa fa-book"></i> <i class="fa fa-caret-down"></i></button>'+
+
+        $('#node-input-name').css("width","60%").after(
+            '<div class="btn-group" style="margin-left: 5px;">'+
+            '<a id="node-input-'+options.type+'-lookup" class="editor-button" data-toggle="dropdown"><i class="fa fa-book"></i> <i class="fa fa-caret-down"></i></a>'+
             '<ul class="dropdown-menu pull-right" role="menu">'+
-            '<li><a id="node-input-'+options.type+'-menu-open-library" tabindex="-1" href="#">Open Library...</a></li>'+
-            '<li><a id="node-input-'+options.type+'-menu-save-library" tabindex="-1" href="#">Save to Library...</a></li>'+
+            '<li><a id="node-input-'+options.type+'-menu-open-library" tabindex="-1" href="#">'+RED._("library.openLibrary")+'</a></li>'+
+            '<li><a id="node-input-'+options.type+'-menu-save-library" tabindex="-1" href="#">'+RED._("library.saveToLibrary")+'</a></li>'+
             '</ul></div>'
         );
-    
-        
-        
+
+
+
         $('#node-input-'+options.type+'-menu-open-library').click(function(e) {
             $("#node-select-library").children().remove();
             var bc = $("#node-dialog-library-breadcrumbs");
             bc.children().first().nextAll().remove();
             libraryEditor.setValue('',-1);
-            
+
             $.getJSON("library/"+options.url,function(data) {
                 $("#node-select-library").append(buildFileList("/",data));
                 $("#node-dialog-library-breadcrumbs a").click(function(e) {
@@ -168,10 +170,10 @@ RED.library = (function() {
                 });
                 $( "#node-dialog-library-lookup" ).dialog( "open" );
             });
-            
+
             e.preventDefault();
         });
-    
+
         $('#node-input-'+options.type+'-menu-save-library').click(function(e) {
             //var found = false;
             var name = $("#node-input-name").val().replace(/(^\s*)|(\s*$)/g,"");
@@ -217,7 +219,7 @@ RED.library = (function() {
             $( "#node-dialog-library-save" ).dialog( "open" );
             e.preventDefault();
         });
-    
+
         libraryEditor = ace.edit('node-select-library-text');
         libraryEditor.setTheme("ace/theme/tomorrow");
         if (options.mode) {
@@ -230,16 +232,16 @@ RED.library = (function() {
         });
         libraryEditor.renderer.$cursorLayer.element.style.opacity=0;
         libraryEditor.$blockScrolling = Infinity;
-        
+
         $( "#node-dialog-library-lookup" ).dialog({
-            title: options.type+" library",
+            title: RED._("library.typeLibrary", {type:options.type}),
             modal: true,
             autoOpen: false,
             width: 800,
             height: 450,
             buttons: [
                 {
-                    text: "Ok",
+                    text: RED._("common.label.ok"),
                     click: function() {
                         if (selectedLibraryItem) {
                             for (var i=0;i<options.fields.length;i++) {
@@ -252,7 +254,7 @@ RED.library = (function() {
                     }
                 },
                 {
-                    text: "Cancel",
+                    text: RED._("common.label.cancel"),
                     click: function() {
                         $( this ).dialog( "close" );
                     }
@@ -270,16 +272,16 @@ RED.library = (function() {
                 $(".form-row:last-child",form).children().height(form.height()-60);
             }
         });
-        
+
         function saveToLibrary(overwrite) {
             var name = $("#node-input-name").val().replace(/(^\s*)|(\s*$)/g,"");
             if (name === "") {
-                name = "Unnamed "+options.type;
+                name = RED._("library.unnamedType",{type:options.type});
             }
             var filename = $("#node-dialog-library-save-filename").val().replace(/(^\s*)|(\s*$)/g,"");
             var pathname = $("#node-dialog-library-save-folder").val().replace(/(^\s*)|(\s*$)/g,"");
             if (filename === "" || !/.+\.js$/.test(filename)) {
-                RED.notify("Invalid filename","warning");
+                RED.notify(RED._("library.invalidFilename"),"warning");
                 return;
             }
             var fullpath = pathname+(pathname===""?"":"/")+filename;
@@ -304,8 +306,7 @@ RED.library = (function() {
                 //    }
                 //}
                 //if (exists) {
-                //    $("#node-dialog-library-save-type").html(options.type);
-                //    $("#node-dialog-library-save-name").html(fullpath);
+                //    $("#node-dialog-library-save-content").html(RED._("library.dialogSaveOverwrite",{libraryType:options.type,libraryName:fullpath}));
                 //    $("#node-dialog-library-save-confirm").dialog( "open" );
                 //    return;
                 //}
@@ -320,7 +321,7 @@ RED.library = (function() {
                     data[field] = $("#node-input-"+field).val();
                 }
             }
-            
+
             data.text = options.editor.getValue();
             $.ajax({
                 url:"library/"+options.url+'/'+fullpath,
@@ -328,27 +329,27 @@ RED.library = (function() {
                 data: JSON.stringify(data),
                 contentType: "application/json; charset=utf-8"
             }).done(function(data,textStatus,xhr) {
-                RED.notify("Saved "+options.type,"success");
+                RED.notify(RED._("library.savedType", {type:options.type}),"success");
             }).fail(function(xhr,textStatus,err) {
-                RED.notify("Saved failed: "+xhr.responseJSON.message,"error");
+                RED.notify(RED._("library.saveFailed",{message:xhr.responseText}),"error");
             });
         }
         $( "#node-dialog-library-save-confirm" ).dialog({
-            title: "Save to library",
+            title: RED._("library.saveToLibrary"),
             modal: true,
             autoOpen: false,
             width: 530,
             height: 230,
             buttons: [
                 {
-                    text: "Ok",
+                    text: RED._("common.label.ok"),
                     click: function() {
                         saveToLibrary(true);
                         $( this ).dialog( "close" );
                     }
                 },
                 {
-                    text: "Cancel",
+                    text: RED._("common.label.cancel"),
                     click: function() {
                         $( this ).dialog( "close" );
                     }
@@ -356,21 +357,21 @@ RED.library = (function() {
             ]
         });
         $( "#node-dialog-library-save" ).dialog({
-            title: "Save to library",
+            title: RED._("library.saveToLibrary"),
             modal: true,
             autoOpen: false,
             width: 530,
             height: 230,
             buttons: [
                 {
-                    text: "Ok",
+                    text: RED._("common.label.ok"),
                     click: function() {
                         saveToLibrary(false);
                         $( this ).dialog( "close" );
                     }
                 },
                 {
-                    text: "Cancel",
+                    text: RED._("common.label.cancel"),
                     click: function() {
                         $( this ).dialog( "close" );
                     }
@@ -379,18 +380,17 @@ RED.library = (function() {
         });
 
     }
-    
+
     function exportFlow() {
         //TODO: don't rely on the main dialog
         var nns = RED.nodes.createExportableNodeSet(RED.view.selection().nodes);
-        $("#dialog-form").html($("script[data-template-name='export-library-dialog']").html());
-        $("#node-input-filename").attr('nodes',JSON.stringify(nns));
-        $( "#dialog" ).dialog("option","title","Export nodes to library").dialog( "open" );
+        $("#node-input-library-filename").attr('nodes',JSON.stringify(nns));
+        exportToLibraryDialog.dialog( "open" );
     }
-    
+
     return {
         init: function() {
-            RED.view.on("selection-changed",function(selection) {
+            RED.events.on("view:selection-changed",function(selection) {
                 if (!selection.nodes) {
                     RED.menu.setDisabled("menu-item-export",true);
                     RED.menu.setDisabled("menu-item-export-clipboard",true);
@@ -401,16 +401,69 @@ RED.library = (function() {
                     RED.menu.setDisabled("menu-item-export-library",false);
                 }
             });
-            
-            if (RED.settings.theme("menu.menu-item-import-library") !== false) { 
+
+            if (RED.settings.theme("menu.menu-item-import-library") !== false) {
                 loadFlowLibrary();
             }
+
+            exportToLibraryDialog = $('<div id="library-dialog" class="hide"><form class="dialog-form form-horizontal"></form></div>')
+                .appendTo("body")
+                .dialog({
+                    modal: true,
+                    autoOpen: false,
+                    width: 500,
+                    resizable: false,
+                    title: RED._("library.exportToLibrary"),
+                    buttons: [
+                        {
+                            id: "library-dialog-ok",
+                            text: RED._("common.label.ok"),
+                            click: function() {
+                                //TODO: move this to RED.library
+                                var flowName = $("#node-input-library-filename").val();
+                                if (!/^\s*$/.test(flowName)) {
+                                    $.ajax({
+                                        url:'library/flows/'+flowName,
+                                        type: "POST",
+                                        data: $("#node-input-library-filename").attr('nodes'),
+                                        contentType: "application/json; charset=utf-8"
+                                    }).done(function() {
+                                            RED.library.loadFlowLibrary();
+                                            RED.notify(RED._("library.savedNodes"),"success");
+                                    }).fail(function(xhr,textStatus,err) {
+                                        RED.notify(RED._("library.saveFailed",{message:xhr.responseText}),"error");
+                                    });
+                                }
+                                $( this ).dialog( "close" );
+                            }
+                        },
+                        {
+                            id: "library-dialog-cancel",
+                            text: RED._("common.label.cancel"),
+                            click: function() {
+                                $( this ).dialog( "close" );
+                            }
+                        }
+                    ],
+                    open: function(e) {
+                        $(this).parent().find(".ui-dialog-titlebar-close").hide();
+                        RED.keyboard.disable();
+                    },
+                    close: function(e) {
+                        RED.keyboard.enable();
+                    }
+            });
+            exportToLibraryDialog.children(".dialog-form").append($(
+                '<div class="form-row">'+
+                '<label for="node-input-library-filename" data-i18n="[append]editor:library.filename"><i class="fa fa-file"></i> </label>'+
+                '<input type="text" id="node-input-library-filename" data-i18n="[placeholder]editor:library.fullFilenamePlaceholder">'+
+                '<input type="text" style="display: none;" />'+ // Second hidden input to prevent submit on Enter
+                '</div>'
+            ));
         },
         create: createUI,
         loadFlowLibrary: loadFlowLibrary,
-        
+
         export: exportFlow
     }
 })();
-
-

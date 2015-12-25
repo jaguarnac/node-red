@@ -14,6 +14,15 @@
  * limitations under the License.
  **/
 
+.ui-widget {
+    font-size: 14px !important;
+    font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif !important;
+}
+.ui-widget input, .ui-widget select, .ui-widget textarea, .ui-widget button {
+    font-size: 14px !important;
+    font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif !important;
+}
+
 /* jQuery Theme overrides */
 .ui-tabs .ui-tabs-panel {
     padding: 0px;
@@ -27,27 +36,40 @@
 
 .ui-dialog {
     border-radius: 1px;
-    border: 1px solid #eee;
     background: #fff;
     padding: 0;
-    box-shadow: 2px 2px 12px rgba(0,0,0,0.2);
+    @include component-shadow;
 }
 .ui-dialog .ui-dialog-content {
     padding: 25px 25px 10px 25px;
 }
+.ui-dialog .ui-dialog-title {
+    width: auto;
+}
 .ui-dialog .ui-dialog-titlebar {
     padding: 10px;
-    background: #f0f0f0;
+    background: #f3f3f3;
     border: none;
-    border-bottom: 2px solid #888;
+    border-bottom: 1px solid #999;
     border-radius: 0;
 }
 .ui-corner-all {
-    border-radius: 2px;
+    border-radius: 1px;
 }
 .ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default {
     background: #f3f3f3;
 }
 .ui-dialog-no-close .ui-dialog-titlebar-close {
     display: none;
+}
+
+.ui-dialog-buttonset {
+    text-align: right;
+}
+
+.ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset {
+    float: none;
+}
+.ui-dialog .ui-dialog-buttonpane {
+    padding: .3em 1em .5em 1em;
 }
